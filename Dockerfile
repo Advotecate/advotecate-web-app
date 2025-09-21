@@ -25,6 +25,10 @@ COPY frontend/ .
 # Build the Next.js application
 RUN npm run build
 
+# Debug: List files after build
+RUN ls -la /app
+RUN ls -la /app/public || echo "No public directory found"
+
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
@@ -42,7 +46,7 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy public directory if it exists
+# Copy public directory and handle standalone builds properly
 COPY --from=builder /app/public ./public
 
 USER nextjs
