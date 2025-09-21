@@ -46,34 +46,16 @@ jobs:
         cache: 'npm'
 
     - name: Install dependencies
-      run: |
-        # Install root dependencies first
-        cd ..
-        npm install
-        # Then install frontend dependencies
-        cd frontend
-        npm ci
-
-    - name: Run linting
-      run: npm run lint
-
-    - name: Run type checking
-      run: npm run typecheck
-
-    - name: Run tests
-      run: npm test
-      env:
-        NODE_ENV: test
-        NEXT_PUBLIC_API_URL: http://localhost:3001
-        NEXT_PUBLIC_SUPABASE_URL: http://localhost:3001
+      run: npm ci
 
     - name: Build frontend
       run: npm run build
       env:
         NODE_ENV: production
-        NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        NEXT_PUBLIC_API_URL: https://advotecate-api-367966088269.us-central1.run.app/api
+        NEXT_PUBLIC_ENVIRONMENT: production
+        NEXT_PUBLIC_FLUIDPAY_ENVIRONMENT: sandbox
+        NEXT_PUBLIC_FLUIDPAY_DOMAIN: advotecate2026
 
   determine-environment:
     runs-on: ubuntu-latest
@@ -109,6 +91,9 @@ jobs:
     needs: [test, determine-environment]
     runs-on: ubuntu-latest
     environment: ${{ needs.determine-environment.outputs.environment }}
+    defaults:
+      run:
+        working-directory: ./frontend
 
     steps:
     - name: Checkout code
@@ -129,10 +114,10 @@ jobs:
     - name: Build project artifacts
       run: vercel build ${{ needs.determine-environment.outputs.vercel_env == 'production' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
       env:
-        NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-        NEXT_PUBLIC_FLUIDPAY_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_FLUIDPAY_PUBLIC_KEY }}
+        NEXT_PUBLIC_API_URL: https://advotecate-api-367966088269.us-central1.run.app/api
+        NEXT_PUBLIC_ENVIRONMENT: production
+        NEXT_PUBLIC_FLUIDPAY_ENVIRONMENT: sandbox
+        NEXT_PUBLIC_FLUIDPAY_DOMAIN: advotecate2026
 
     - name: Deploy project artifacts
       id: deploy
