@@ -1,0 +1,405 @@
+name: 🚀 MVP Deploy
+
+on:
+  push:
+    branches: [main, staging]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      force_deploy:
+        description: 'Force deployment (skip tests)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '18'
+  TERRAFORM_VERSION: '1.5.0'
+
+jobs:
+  # Determine deployment environment
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.env.outputs.environment }}
+      gcp_project: ${{ steps.env.outputs.gcp_project }}
+      domain_prefix: ${{ steps.env.outputs.domain_prefix }}
+      cluster_name: ${{ steps.env.outputs.cluster_name }}
+    steps:
+    - name: Determine environment
+      id: env
+      run: |
+        if [ "${{ github.event.inputs.environment }}" != "" ]; then
+          ENV=${{ github.event.inputs.environment }}
+        elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+          ENV=production
+        else
+          ENV=staging
+        fi
+
+        echo "environment=$ENV" >> $GITHUB_OUTPUT
+
+        if [ "$ENV" == "production" ]; then
+          echo "gcp_project=${{ secrets.GCP_PROJECT_ID_PRODUCTION }}" >> $GITHUB_OUTPUT
+          echo "domain_prefix=" >> $GITHUB_OUTPUT
+          echo "cluster_name=prod-supabase-cluster" >> $GITHUB_OUTPUT
+        else
+          echo "gcp_project=${{ secrets.GCP_PROJECT_ID_STAGING }}" >> $GITHUB_OUTPUT
+          echo "domain_prefix=staging-" >> $GITHUB_OUTPUT
+          echo "cluster_name=staging-supabase-cluster" >> $GITHUB_OUTPUT
+        fi
+
+  # Test phase (can be skipped with force_deploy)
+  test:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.force_deploy != 'true'
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd backend && npm ci
+
+    - name: Lint and typecheck
+      run: |
+        cd backend
+        npm run lint
+        npm run typecheck
+
+    - name: Run tests
+      run: |
+        cd backend
+        npm test
+      env:
+        NODE_ENV: test
+
+  # Infrastructure deployment
+  infrastructure:
+    needs: [setup, test]
+    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: ${{ needs.setup.outputs.environment }}
+    outputs:
+      infrastructure_ready: ${{ steps.deploy.outputs.success }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+    - name: Authenticate to GCP
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Deploy infrastructure
+      id: deploy
+      run: |
+        cd infrastructure/gcp-supabase
+
+        # Create terraform.tfvars
+        cat > terraform.tfvars << EOF
+        project_id = "${{ needs.setup.outputs.gcp_project }}"
+        region = "us-central1"
+        environment = "${{ needs.setup.outputs.environment }}"
+
+        # MVP optimized settings
+        gke_node_count = 2
+        gke_max_node_count = 5
+        gke_machine_type = "e2-standard-2"
+        gke_preemptible = ${{ needs.setup.outputs.environment == 'staging' && 'true' || 'false' }}
+
+        cloudsql_tier = "db-custom-2-8192"
+        cloudsql_availability_type = "${{ needs.setup.outputs.environment == 'production' && 'REGIONAL' || 'ZONAL' }}"
+        cloudsql_disk_size = 100
+
+        enable_cost_optimization = ${{ needs.setup.outputs.environment == 'staging' && 'true' || 'false' }}
+
+        additional_labels = {
+          environment = "${{ needs.setup.outputs.environment }}"
+          deployed_by = "github-actions"
+          mvp = "true"
+        }
+        EOF
+
+        # Deploy
+        terraform init
+        terraform plan -out=tfplan
+        terraform apply tfplan
+
+        echo "success=true" >> $GITHUB_OUTPUT
+
+    - name: Wait for cluster readiness
+      run: |
+        gcloud container clusters get-credentials ${{ needs.setup.outputs.cluster_name }} \
+          --region us-central1 \
+          --project ${{ needs.setup.outputs.gcp_project }}
+
+        # Wait for cluster to be ready
+        kubectl wait --for=condition=Ready nodes --all --timeout=300s
+
+  # Backend deployment
+  backend:
+    needs: [setup, infrastructure]
+    if: needs.infrastructure.outputs.infrastructure_ready == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ needs.setup.outputs.environment }}
+    outputs:
+      backend_url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+
+    - name: Authenticate to GCP
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Configure Docker
+      run: gcloud auth configure-docker
+
+    - name: Get GKE credentials
+      run: |
+        gcloud container clusters get-credentials ${{ needs.setup.outputs.cluster_name }} \
+          --region us-central1 \
+          --project ${{ needs.setup.outputs.gcp_project }}
+
+    - name: Create secrets
+      run: |
+        # Determine secret values based on environment
+        if [ "${{ needs.setup.outputs.environment }}" == "production" ]; then
+          FLUIDPAY_KEY="${{ secrets.FLUIDPAY_API_KEY_PROD }}"
+          FLUIDPAY_SECRET="${{ secrets.FLUIDPAY_API_SECRET_PROD }}"
+          JWT_SECRET="${{ secrets.JWT_SECRET_PROD }}"
+        else
+          FLUIDPAY_KEY="${{ secrets.FLUIDPAY_API_KEY_STAGING }}"
+          FLUIDPAY_SECRET="${{ secrets.FLUIDPAY_API_SECRET_STAGING }}"
+          JWT_SECRET="${{ secrets.JWT_SECRET_STAGING }}"
+        fi
+
+        # Create or update secrets
+        kubectl create secret generic backend-secrets \
+          --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+          --from-literal=SUPABASE_URL="https://${{ needs.setup.outputs.domain_prefix }}api.advotecate.com" \
+          --from-literal=SUPABASE_SERVICE_KEY="${{ secrets.SUPABASE_SERVICE_KEY }}" \
+          --from-literal=FLUIDPAY_API_KEY="$FLUIDPAY_KEY" \
+          --from-literal=FLUIDPAY_API_SECRET="$FLUIDPAY_SECRET" \
+          --from-literal=FLUIDPAY_WEBHOOK_SECRET="${{ secrets.FLUIDPAY_WEBHOOK_SECRET }}" \
+          --from-literal=JWT_SECRET="$JWT_SECRET" \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Build and deploy backend
+      id: deploy
+      run: |
+        cd backend
+
+        # Build Docker image
+        IMAGE_TAG="gcr.io/${{ needs.setup.outputs.gcp_project }}/advotecate-backend:${{ github.sha }}"
+        docker build -f Dockerfile.prod -t $IMAGE_TAG .
+        docker push $IMAGE_TAG
+
+        # Update deployment manifest
+        sed -i "s|PROJECT_ID_PLACEHOLDER|${{ needs.setup.outputs.gcp_project }}|g" gcp-deploy.yaml
+        sed -i "s|gcr.io/.*/advotecate-backend:latest|$IMAGE_TAG|g" gcp-deploy.yaml
+
+        # Deploy
+        kubectl apply -f gcp-deploy.yaml
+        kubectl rollout status deployment/advotecate-backend --timeout=600s
+
+        # Output URL
+        API_URL="https://${{ needs.setup.outputs.domain_prefix }}api.advotecate.com"
+        echo "url=$API_URL" >> $GITHUB_OUTPUT
+
+  # Frontend deployment
+  frontend:
+    needs: [setup, backend]
+    runs-on: ubuntu-latest
+    environment: ${{ needs.setup.outputs.environment }}
+    outputs:
+      frontend_url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install Vercel CLI
+      run: npm install --global vercel@latest
+
+    - name: Create frontend if needed
+      run: |
+        if [ ! -d "frontend" ]; then
+          ./scripts/deploy-vercel.sh --help > /dev/null 2>&1 || true
+        fi
+
+    - name: Pull Vercel environment
+      run: |
+        cd frontend 2>/dev/null || cd .
+        VERCEL_ENV="${{ needs.setup.outputs.environment == 'production' && 'production' || 'preview' }}"
+        vercel pull --yes --environment=$VERCEL_ENV --token=${{ secrets.VERCEL_TOKEN }}
+
+    - name: Build project
+      run: |
+        cd frontend 2>/dev/null || cd .
+        VERCEL_ENV="${{ needs.setup.outputs.environment == 'production' && 'production' || 'preview' }}"
+        vercel build ${{ needs.setup.outputs.environment == 'production' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
+      env:
+        NEXT_PUBLIC_API_URL: ${{ needs.backend.outputs.backend_url }}
+        NEXT_PUBLIC_SUPABASE_URL: ${{ needs.backend.outputs.backend_url }}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        NEXT_PUBLIC_FLUIDPAY_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_FLUIDPAY_PUBLIC_KEY }}
+
+    - name: Deploy to Vercel
+      id: deploy
+      run: |
+        cd frontend 2>/dev/null || cd .
+        DEPLOY_ARGS="${{ needs.setup.outputs.environment == 'production' && '--prod' || '' }}"
+        DEPLOY_URL=$(vercel deploy --prebuilt $DEPLOY_ARGS --token=${{ secrets.VERCEL_TOKEN }})
+        echo "url=$DEPLOY_URL" >> $GITHUB_OUTPUT
+
+  # Health checks and notification
+  verify:
+    needs: [setup, backend, frontend]
+    if: always() && needs.backend.result == 'success' && needs.frontend.result == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Test deployments
+      run: |
+        # Test backend health
+        echo "Testing backend: ${{ needs.backend.outputs.backend_url }}"
+        curl -f "${{ needs.backend.outputs.backend_url }}/health" || echo "Backend health check failed"
+
+        # Test frontend
+        echo "Testing frontend: ${{ needs.frontend.outputs.frontend_url }}"
+        curl -f "${{ needs.frontend.outputs.frontend_url }}/" || echo "Frontend check failed"
+
+    - name: Notify success
+      if: success()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        channel: '#deployments'
+        text: |
+          🚀 MVP Deployment Success!
+
+          Environment: ${{ needs.setup.outputs.environment }}
+          Frontend: ${{ needs.frontend.outputs.frontend_url }}
+          Backend: ${{ needs.backend.outputs.backend_url }}
+
+          Commit: ${{ github.sha }}
+          Author: ${{ github.actor }}
+
+          Ready for testing! 🎉
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      continue-on-error: true
+
+    - name: Create deployment summary
+      if: always()
+      run: |
+        cat >> $GITHUB_STEP_SUMMARY << EOF
+        # 🚀 MVP Deployment Summary
+
+        **Environment:** ${{ needs.setup.outputs.environment }}
+        **Status:** ${{ job.status }}
+
+        ## 🌐 Live URLs
+        - **Frontend:** [${{ needs.frontend.outputs.frontend_url }}](${{ needs.frontend.outputs.frontend_url }})
+        - **API:** [${{ needs.backend.outputs.backend_url }}](${{ needs.backend.outputs.backend_url }})
+        - **Monitoring:** [https://${{ needs.setup.outputs.domain_prefix }}monitoring.advotecate.com](https://${{ needs.setup.outputs.domain_prefix }}monitoring.advotecate.com)
+
+        ## 📋 Next Steps
+        - [ ] Test application end-to-end
+        - [ ] Configure DNS records
+        - [ ] Set up monitoring alerts
+        - [ ] Update documentation
+
+        ## 🔧 Quick Commands
+        \`\`\`bash
+        # View backend logs
+        kubectl logs -f deployment/advotecate-backend
+
+        # Check frontend logs
+        vercel logs ${{ needs.frontend.outputs.frontend_url }}
+
+        # Scale backend
+        kubectl scale deployment advotecate-backend --replicas=3
+        \`\`\`
+        EOF
+
+  # Rollback on failure
+  rollback:
+    needs: [setup, backend, frontend, verify]
+    if: failure()
+    runs-on: ubuntu-latest
+    environment: ${{ needs.setup.outputs.environment }}
+
+    steps:
+    - name: Authenticate to GCP
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Rollback backend
+      run: |
+        gcloud container clusters get-credentials ${{ needs.setup.outputs.cluster_name }} \
+          --region us-central1 \
+          --project ${{ needs.setup.outputs.gcp_project }}
+
+        kubectl rollout undo deployment/advotecate-backend || echo "No previous deployment to rollback to"
+
+    - name: Notify failure
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        channel: '#deployments'
+        text: |
+          🚨 MVP Deployment Failed!
+
+          Environment: ${{ needs.setup.outputs.environment }}
+          Branch: ${{ github.ref_name }}
+          Commit: ${{ github.sha }}
+          Author: ${{ github.actor }}
+
+          Check the logs and try again.
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      continue-on-error: true

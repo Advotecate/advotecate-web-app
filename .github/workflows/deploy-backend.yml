@@ -1,0 +1,245 @@
+name: Deploy Backend to GCP
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+
+env:
+  GCP_PROJECT_ID_STAGING: ${{ secrets.GCP_PROJECT_ID_STAGING }}
+  GCP_PROJECT_ID_PRODUCTION: ${{ secrets.GCP_PROJECT_ID_PRODUCTION }}
+  GCP_REGION: us-central1
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: advotecate_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run linting
+      run: npm run lint
+
+    - name: Run type checking
+      run: npm run typecheck
+
+    - name: Run tests
+      run: npm test
+      env:
+        NODE_ENV: test
+        DATABASE_URL: postgresql://postgres:test_password@localhost:5432/advotecate_test
+        JWT_SECRET: test_jwt_secret_for_testing_only_64_characters_long_minimum
+        FLUIDPAY_API_KEY: test_key
+        FLUIDPAY_API_SECRET: test_secret
+
+    - name: Run test coverage
+      run: npm run test:coverage
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        directory: ./backend/coverage
+        flags: backend
+
+  determine-environment:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.env.outputs.environment }}
+      project_id: ${{ steps.env.outputs.project_id }}
+      cluster_name: ${{ steps.env.outputs.cluster_name }}
+    steps:
+    - name: Determine environment
+      id: env
+      run: |
+        if [ "${{ github.event.inputs.environment }}" != "" ]; then
+          ENV=${{ github.event.inputs.environment }}
+        elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+          ENV=production
+        else
+          ENV=staging
+        fi
+
+        echo "environment=$ENV" >> $GITHUB_OUTPUT
+
+        if [ "$ENV" == "production" ]; then
+          echo "project_id=${{ env.GCP_PROJECT_ID_PRODUCTION }}" >> $GITHUB_OUTPUT
+          echo "cluster_name=prod-supabase-cluster" >> $GITHUB_OUTPUT
+        else
+          echo "project_id=${{ env.GCP_PROJECT_ID_STAGING }}" >> $GITHUB_OUTPUT
+          echo "cluster_name=staging-supabase-cluster" >> $GITHUB_OUTPUT
+        fi
+
+  deploy:
+    needs: [test, determine-environment]
+    runs-on: ubuntu-latest
+    environment: ${{ needs.determine-environment.outputs.environment }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Configure Docker to use gcloud as credential helper
+      run: gcloud auth configure-docker
+
+    - name: Get GKE credentials
+      run: |
+        gcloud container clusters get-credentials ${{ needs.determine-environment.outputs.cluster_name }} \
+          --region ${{ env.GCP_REGION }} \
+          --project ${{ needs.determine-environment.outputs.project_id }}
+
+    - name: Create Kubernetes secrets
+      run: |
+        # Check if secrets already exist
+        if ! kubectl get secret backend-secrets -n default; then
+          # Create secrets from GitHub secrets
+          kubectl create secret generic backend-secrets \
+            --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            --from-literal=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
+            --from-literal=SUPABASE_SERVICE_KEY="${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            --from-literal=FLUIDPAY_API_KEY="${{ secrets.FLUIDPAY_API_KEY }}" \
+            --from-literal=FLUIDPAY_API_SECRET="${{ secrets.FLUIDPAY_API_SECRET }}" \
+            --from-literal=FLUIDPAY_WEBHOOK_SECRET="${{ secrets.FLUIDPAY_WEBHOOK_SECRET }}" \
+            --from-literal=JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            -n default
+        else
+          echo "Secrets already exist, skipping creation"
+        fi
+
+    - name: Build and push Docker image
+      run: |
+        IMAGE_TAG=gcr.io/${{ needs.determine-environment.outputs.project_id }}/advotecate-backend:${{ github.sha }}
+        LATEST_TAG=gcr.io/${{ needs.determine-environment.outputs.project_id }}/advotecate-backend:latest
+
+        # Build image
+        docker build -f backend/Dockerfile.prod -t $IMAGE_TAG -t $LATEST_TAG backend/
+
+        # Push images
+        docker push $IMAGE_TAG
+        docker push $LATEST_TAG
+
+    - name: Deploy to GKE
+      run: |
+        # Update deployment manifest with current image
+        sed -i "s|PROJECT_ID_PLACEHOLDER|${{ needs.determine-environment.outputs.project_id }}|g" backend/gcp-deploy.yaml
+        sed -i "s|gcr.io/.*/advotecate-backend:latest|gcr.io/${{ needs.determine-environment.outputs.project_id }}/advotecate-backend:${{ github.sha }}|g" backend/gcp-deploy.yaml
+
+        # Apply deployment
+        kubectl apply -f backend/gcp-deploy.yaml
+
+        # Wait for rollout to complete
+        kubectl rollout status deployment/advotecate-backend -n default --timeout=600s
+
+    - name: Verify deployment
+      run: |
+        # Check deployment status
+        kubectl get deployment advotecate-backend -n default
+        kubectl get pods -l app=advotecate-backend -n default
+
+        # Test health endpoint
+        kubectl run test-health --image=curlimages/curl:latest --rm -i --restart=Never -- \
+          curl -f http://advotecate-backend.default.svc.cluster.local:3000/health || echo "Health check failed"
+
+    - name: Notify deployment status
+      if: always()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        text: |
+          Backend deployment to ${{ needs.determine-environment.outputs.environment }} ${{ job.status }}
+          Environment: ${{ needs.determine-environment.outputs.environment }}
+          Commit: ${{ github.sha }}
+          Author: ${{ github.actor }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      continue-on-error: true
+
+  rollback:
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    if: failure()
+    environment: ${{ needs.determine-environment.outputs.environment }}
+
+    steps:
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Get GKE credentials
+      run: |
+        gcloud container clusters get-credentials ${{ needs.determine-environment.outputs.cluster_name }} \
+          --region ${{ env.GCP_REGION }} \
+          --project ${{ needs.determine-environment.outputs.project_id }}
+
+    - name: Rollback deployment
+      run: |
+        kubectl rollout undo deployment/advotecate-backend -n default
+        kubectl rollout status deployment/advotecate-backend -n default --timeout=300s
+
+    - name: Notify rollback
+      uses: 8398a7/action-slack@v3
+      with:
+        status: 'warning'
+        channel: '#deployments'
+        text: |
+          🚨 Backend deployment failed and was rolled back
+          Environment: ${{ needs.determine-environment.outputs.environment }}
+          Commit: ${{ github.sha }}
+          Author: ${{ github.actor }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      continue-on-error: true

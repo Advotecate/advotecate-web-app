@@ -1,0 +1,79 @@
+{
+  "name": "advotecate-frontend",
+  "version": 2,
+  "buildCommand": "npm run build:frontend",
+  "outputDirectory": "frontend/dist",
+  "installCommand": "npm install && cd frontend && npm install",
+  "devCommand": "cd frontend && npm run dev",
+  "framework": null,
+  "functions": {},
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://api.advotecate.com/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization, apikey"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://api.fluidpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.advotecate.com https://api.fluidpay.com wss://api.advotecate.com;"
+        }
+      ]
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://api.advotecate.com",
+    "NEXT_PUBLIC_SUPABASE_URL": "https://api.advotecate.com",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase_anon_key",
+    "NEXT_PUBLIC_FLUIDPAY_PUBLIC_KEY": "@fluidpay_public_key",
+    "NEXT_PUBLIC_APP_URL": "https://app.advotecate.com"
+  },
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
+  },
+  "regions": ["iad1", "sfo1"],
+  "cleanUrls": true,
+  "trailingSlash": false
+}

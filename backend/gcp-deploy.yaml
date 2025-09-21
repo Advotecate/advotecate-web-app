@@ -1,0 +1,137 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: advotecate-backend
+  namespace: default
+  labels:
+    app: advotecate-backend
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: advotecate-backend
+  template:
+    metadata:
+      labels:
+        app: advotecate-backend
+        version: v1
+    spec:
+      containers:
+      - name: backend
+        image: gcr.io/PROJECT_ID_PLACEHOLDER/advotecate-backend:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: DATABASE_URL
+        - name: SUPABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: SUPABASE_URL
+        - name: SUPABASE_SERVICE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: SUPABASE_SERVICE_KEY
+        - name: FLUIDPAY_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: FLUIDPAY_API_KEY
+        - name: FLUIDPAY_API_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: FLUIDPAY_API_SECRET
+        - name: FLUIDPAY_WEBHOOK_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: FLUIDPAY_WEBHOOK_SECRET
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: JWT_SECRET
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: advotecate-backend
+  namespace: default
+  labels:
+    app: advotecate-backend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  selector:
+    app: advotecate-backend
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: advotecate-backend-hpa
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: advotecate-backend
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

@@ -1,0 +1,319 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: supabase-network-policy
+  namespace: supabase
+spec:
+  podSelector:
+    matchLabels:
+      app: supabase
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: krakend
+    - namespaceSelector:
+        matchLabels:
+          name: supabase
+    ports:
+    - protocol: TCP
+      port: 9999  # Auth service
+    - protocol: TCP
+      port: 3000  # REST service
+    - protocol: TCP
+      port: 4000  # Realtime service
+    - protocol: TCP
+      port: 5000  # Storage service
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: supabase
+    ports:
+    - protocol: TCP
+      port: 8000  # Kong gateway
+    - protocol: TCP
+      port: 8001  # Kong admin
+  egress:
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+    - protocol: TCP
+      port: 443   # HTTPS
+    - protocol: TCP
+      port: 80    # HTTP
+    - protocol: UDP
+      port: 53    # DNS
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: krakend-network-policy
+  namespace: krakend
+spec:
+  podSelector:
+    matchLabels:
+      app: krakend
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from: []  # Allow from anywhere (internet)
+    ports:
+    - protocol: TCP
+      port: 8080
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: supabase
+    ports:
+    - protocol: TCP
+      port: 8090  # Metrics
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: supabase
+    ports:
+    - protocol: TCP
+      port: 8000  # Kong gateway
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: default
+    ports:
+    - protocol: TCP
+      port: 3000  # Backend service
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443   # HTTPS
+    - protocol: TCP
+      port: 80    # HTTP
+    - protocol: UDP
+      port: 53    # DNS
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: supabase-auth
+  namespace: supabase
+  annotations:
+    iam.gke.io/gcp-service-account: supabase-auth@PROJECT_ID_PLACEHOLDER.iam.gserviceaccount.com
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: supabase-storage
+  namespace: supabase
+  annotations:
+    iam.gke.io/gcp-service-account: supabase-storage@PROJECT_ID_PLACEHOLDER.iam.gserviceaccount.com
+
+---
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: supabase-psp
+  namespace: supabase
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  supplementalGroups:
+    rule: 'MustRunAs'
+    ranges:
+      - min: 1
+        max: 65535
+  fsGroup:
+    rule: 'MustRunAs'
+    ranges:
+      - min: 1
+        max: 65535
+  seLinux:
+    rule: 'RunAsAny'
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: supabase-psp-user
+rules:
+- apiGroups: ['policy']
+  resources: ['podsecuritypolicies']
+  verbs:     ['use']
+  resourceNames:
+  - supabase-psp
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: supabase-psp-binding
+roleRef:
+  kind: ClusterRole
+  name: supabase-psp-user
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: supabase-auth
+  namespace: supabase
+- kind: ServiceAccount
+  name: supabase-storage
+  namespace: supabase
+- kind: ServiceAccount
+  name: default
+  namespace: supabase
+
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: api-ssl-cert
+  namespace: krakend
+spec:
+  domains:
+    - api.advotecate.com
+
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: supabase-ssl-cert
+  namespace: supabase
+spec:
+  domains:
+    - supabase.advotecate.com
+
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: monitoring-ssl-cert
+  namespace: supabase
+spec:
+  domains:
+    - monitoring.advotecate.com
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tls-secret
+  namespace: krakend
+type: kubernetes.io/tls
+data:
+  # These will be populated by cert-manager or manual certificate upload
+  tls.crt: ""
+  tls.key: ""
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: monitoring-ingress
+  namespace: supabase
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    networking.gke.io/managed-certificates: "monitoring-ssl-cert"
+    kubernetes.io/ingress.allow-http: "false"
+spec:
+  rules:
+  - host: monitoring.advotecate.com
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: grafana
+            port:
+              number: 3000
+
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: supabase-limits
+  namespace: supabase
+spec:
+  limits:
+  - default:
+      memory: "512Mi"
+      cpu: "500m"
+    defaultRequest:
+      memory: "128Mi"
+      cpu: "100m"
+    type: Container
+  - max:
+      memory: "2Gi"
+      cpu: "2000m"
+    min:
+      memory: "64Mi"
+      cpu: "50m"
+    type: Container
+
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: supabase-quota
+  namespace: supabase
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: 8Gi
+    limits.cpu: "8"
+    limits.memory: 16Gi
+    persistentvolumeclaims: "10"
+    pods: "20"
+    services: "10"
+
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: krakend-limits
+  namespace: krakend
+spec:
+  limits:
+  - default:
+      memory: "256Mi"
+      cpu: "200m"
+    defaultRequest:
+      memory: "64Mi"
+      cpu: "50m"
+    type: Container
+
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: krakend-quota
+  namespace: krakend
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 2Gi
+    limits.cpu: "2"
+    limits.memory: 4Gi
+    pods: "10"
+    services: "5"

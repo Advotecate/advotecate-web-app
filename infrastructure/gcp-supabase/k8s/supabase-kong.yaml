@@ -1,0 +1,188 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kong-gateway
+  namespace: supabase
+  labels:
+    app: kong
+    component: gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kong
+      component: gateway
+  template:
+    metadata:
+      labels:
+        app: kong
+        component: gateway
+    spec:
+      tolerations:
+      - key: "node-type"
+        operator: "Equal"
+        value: "system"
+        effect: "NoSchedule"
+      containers:
+      - name: kong
+        image: kong:3.4-alpine
+        ports:
+        - containerPort: 8000
+          name: http
+        - containerPort: 8443
+          name: https
+        - containerPort: 8001
+          name: admin
+        - containerPort: 8444
+          name: admin-ssl
+        env:
+        - name: KONG_DATABASE
+          value: "postgres"
+        - name: KONG_PG_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: supabase-config
+              key: POSTGRES_HOST
+        - name: KONG_PG_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: supabase-config
+              key: POSTGRES_PORT
+        - name: KONG_PG_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: supabase-config
+              key: POSTGRES_DB
+        - name: KONG_PG_USER
+          valueFrom:
+            configMapKeyRef:
+              name: supabase-config
+              key: POSTGRES_USER
+        - name: KONG_PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: supabase-secrets
+              key: POSTGRES_PASSWORD
+        - name: KONG_PROXY_ACCESS_LOG
+          value: "/dev/stdout"
+        - name: KONG_ADMIN_ACCESS_LOG
+          value: "/dev/stdout"
+        - name: KONG_PROXY_ERROR_LOG
+          value: "/dev/stderr"
+        - name: KONG_ADMIN_ERROR_LOG
+          value: "/dev/stderr"
+        - name: KONG_ADMIN_LISTEN
+          value: "0.0.0.0:8001"
+        - name: KONG_ADMIN_GUI_URL
+          value: "http://localhost:8002"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /status
+            port: 8001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /status
+            port: 8001
+          initialDelaySeconds: 60
+          periodSeconds: 30
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-gateway
+  namespace: supabase
+  labels:
+    app: kong
+    component: gateway
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  - port: 8443
+    targetPort: 8443
+    protocol: TCP
+    name: https
+  - port: 8001
+    targetPort: 8001
+    protocol: TCP
+    name: admin
+  selector:
+    app: kong
+    component: gateway
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kong-migrations
+  namespace: supabase
+  labels:
+    app: kong
+    component: migrations
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kong
+      component: migrations
+  template:
+    metadata:
+      labels:
+        app: kong
+        component: migrations
+    spec:
+      tolerations:
+      - key: "node-type"
+        operator: "Equal"
+        value: "system"
+        effect: "NoSchedule"
+      restartPolicy: Never
+      initContainers:
+      - name: migrations
+        image: kong:3.4-alpine
+        command: ['kong', 'migrations', 'bootstrap']
+        env:
+        - name: KONG_DATABASE
+          value: "postgres"
+        - name: KONG_PG_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: supabase-config
+              key: POSTGRES_HOST
+        - name: KONG_PG_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: supabase-config
+              key: POSTGRES_PORT
+        - name: KONG_PG_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: supabase-config
+              key: POSTGRES_DB
+        - name: KONG_PG_USER
+          valueFrom:
+            configMapKeyRef:
+              name: supabase-config
+              key: POSTGRES_USER
+        - name: KONG_PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: supabase-secrets
+              key: POSTGRES_PASSWORD
+      containers:
+      - name: placeholder
+        image: busybox
+        command: ['sleep', '3600']

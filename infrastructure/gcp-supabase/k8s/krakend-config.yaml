@@ -1,0 +1,506 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: krakend-config
+  namespace: krakend
+  labels:
+    app: krakend
+    component: config
+data:
+  krakend.json: |
+    {
+      "version": 3,
+      "name": "Advotecate API Gateway",
+      "timeout": "3000ms",
+      "cache_ttl": "300s",
+      "output_encoding": "json",
+      "port": 8080,
+      "host": [
+        "https://api.advotecate.com"
+      ],
+      "extra_config": {
+        "security/cors": {
+          "allow_origins": [
+            "https://app.advotecate.com",
+            "https://supabase.advotecate.com",
+            "http://localhost:3000",
+            "http://localhost:5173"
+          ],
+          "allow_methods": [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+            "OPTIONS"
+          ],
+          "allow_headers": [
+            "Origin",
+            "Authorization",
+            "Content-Type",
+            "Accept",
+            "X-Requested-With",
+            "apikey",
+            "prefer"
+          ],
+          "expose_headers": [
+            "Content-Length",
+            "Content-Range",
+            "Content-Profile"
+          ],
+          "allow_credentials": true,
+          "max_age": "12h"
+        },
+        "telemetry/metrics": {
+          "collection_time": "60s",
+          "proxy_disabled": false,
+          "router_disabled": false,
+          "backend_disabled": false,
+          "endpoint_disabled": false,
+          "listen_address": ":8090"
+        },
+        "telemetry/logging": {
+          "level": "INFO",
+          "prefix": "[KRAKEND]",
+          "syslog": false,
+          "stdout": true
+        },
+        "security/http": {
+          "allowed_hosts": [
+            "api.advotecate.com",
+            "localhost:8080"
+          ],
+          "ssl_redirect": true,
+          "ssl_host": "api.advotecate.com",
+          "sts_seconds": 31536000,
+          "frame_deny": true,
+          "content_type_nosniff": true,
+          "browser_xss_filter": true,
+          "content_security_policy": "default-src 'self'; script-src 'self'"
+        }
+      },
+      "endpoints": [
+        {
+          "endpoint": "/health",
+          "method": "GET",
+          "output_encoding": "json",
+          "backend": [
+            {
+              "url_pattern": "/health",
+              "encoding": "json",
+              "method": "GET",
+              "host": [
+                "http://kong-gateway.supabase.svc.cluster.local:8000"
+              ]
+            }
+          ]
+        },
+        {
+          "endpoint": "/auth/v1/{path}",
+          "method": "GET",
+          "output_encoding": "json",
+          "backend": [
+            {
+              "url_pattern": "/auth/v1/{path}",
+              "encoding": "json",
+              "method": "GET",
+              "host": [
+                "http://kong-gateway.supabase.svc.cluster.local:8000"
+              ],
+              "extra_config": {
+                "modifier/martian": {
+                  "header.Modifier": {
+                    "scope": ["request"],
+                    "name": "Authorization",
+                    "value": "Bearer SERVICE_ROLE_KEY_PLACEHOLDER"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "endpoint": "/auth/v1/{path}",
+          "method": "POST",
+          "output_encoding": "json",
+          "backend": [
+            {
+              "url_pattern": "/auth/v1/{path}",
+              "encoding": "json",
+              "method": "POST",
+              "host": [
+                "http://kong-gateway.supabase.svc.cluster.local:8000"
+              ]
+            }
+          ],
+          "extra_config": {
+            "auth/validator": {
+              "alg": "HS256",
+              "jwk_url": "https://api.advotecate.com/auth/v1/keys",
+              "audience": ["authenticated"],
+              "roles_key": "role",
+              "roles": ["authenticated", "service_role"],
+              "disable_jwk_security": true
+            }
+          }
+        },
+        {
+          "endpoint": "/rest/v1/{path}",
+          "method": "GET",
+          "output_encoding": "json",
+          "backend": [
+            {
+              "url_pattern": "/rest/v1/{path}",
+              "encoding": "json",
+              "method": "GET",
+              "host": [
+                "http://kong-gateway.supabase.svc.cluster.local:8000"
+              ]
+            }
+          ],
+          "extra_config": {
+            "auth/validator": {
+              "alg": "HS256",
+              "jwk_url": "https://api.advotecate.com/auth/v1/keys",
+              "audience": ["authenticated"],
+              "roles_key": "role",
+              "roles": ["authenticated", "anon"],
+              "disable_jwk_security": true
+            }
+          }
+        },
+        {
+          "endpoint": "/rest/v1/{path}",
+          "method": "POST",
+          "output_encoding": "json",
+          "backend": [
+            {
+              "url_pattern": "/rest/v1/{path}",
+              "encoding": "json",
+              "method": "POST",
+              "host": [
+                "http://kong-gateway.supabase.svc.cluster.local:8000"
+              ]
+            }
+          ],
+          "extra_config": {
+            "auth/validator": {
+              "alg": "HS256",
+              "jwk_url": "https://api.advotecate.com/auth/v1/keys",
+              "audience": ["authenticated"],
+              "roles_key": "role",
+              "roles": ["authenticated"],
+              "disable_jwk_security": true
+            }
+          }
+        },
+        {
+          "endpoint": "/rest/v1/{path}",
+          "method": "PATCH",
+          "output_encoding": "json",
+          "backend": [
+            {
+              "url_pattern": "/rest/v1/{path}",
+              "encoding": "json",
+              "method": "PATCH",
+              "host": [
+                "http://kong-gateway.supabase.svc.cluster.local:8000"
+              ]
+            }
+          ],
+          "extra_config": {
+            "auth/validator": {
+              "alg": "HS256",
+              "jwk_url": "https://api.advotecate.com/auth/v1/keys",
+              "audience": ["authenticated"],
+              "roles_key": "role",
+              "roles": ["authenticated"],
+              "disable_jwk_security": true
+            }
+          }
+        },
+        {
+          "endpoint": "/rest/v1/{path}",
+          "method": "DELETE",
+          "output_encoding": "json",
+          "backend": [
+            {
+              "url_pattern": "/rest/v1/{path}",
+              "encoding": "json",
+              "method": "DELETE",
+              "host": [
+                "http://kong-gateway.supabase.svc.cluster.local:8000"
+              ]
+            }
+          ],
+          "extra_config": {
+            "auth/validator": {
+              "alg": "HS256",
+              "jwk_url": "https://api.advotecate.com/auth/v1/keys",
+              "audience": ["authenticated"],
+              "roles_key": "role",
+              "roles": ["authenticated"],
+              "disable_jwk_security": true
+            }
+          }
+        },
+        {
+          "endpoint": "/storage/v1/{path}",
+          "method": "GET",
+          "output_encoding": "json",
+          "backend": [
+            {
+              "url_pattern": "/storage/v1/{path}",
+              "encoding": "json",
+              "method": "GET",
+              "host": [
+                "http://kong-gateway.supabase.svc.cluster.local:8000"
+              ]
+            }
+          ]
+        },
+        {
+          "endpoint": "/storage/v1/{path}",
+          "method": "POST",
+          "output_encoding": "json",
+          "backend": [
+            {
+              "url_pattern": "/storage/v1/{path}",
+              "encoding": "json",
+              "method": "POST",
+              "host": [
+                "http://kong-gateway.supabase.svc.cluster.local:8000"
+              ]
+            }
+          ],
+          "extra_config": {
+            "auth/validator": {
+              "alg": "HS256",
+              "jwk_url": "https://api.advotecate.com/auth/v1/keys",
+              "audience": ["authenticated"],
+              "roles_key": "role",
+              "roles": ["authenticated"],
+              "disable_jwk_security": true
+            }
+          }
+        },
+        {
+          "endpoint": "/realtime/v1/{path}",
+          "method": "GET",
+          "output_encoding": "json",
+          "backend": [
+            {
+              "url_pattern": "/realtime/v1/{path}",
+              "encoding": "json",
+              "method": "GET",
+              "host": [
+                "http://kong-gateway.supabase.svc.cluster.local:8000"
+              ]
+            }
+          ]
+        },
+        {
+          "endpoint": "/functions/v1/{path}",
+          "method": "POST",
+          "output_encoding": "json",
+          "backend": [
+            {
+              "url_pattern": "/functions/v1/{path}",
+              "encoding": "json",
+              "method": "POST",
+              "host": [
+                "http://kong-gateway.supabase.svc.cluster.local:8000"
+              ]
+            }
+          ],
+          "extra_config": {
+            "auth/validator": {
+              "alg": "HS256",
+              "jwk_url": "https://api.advotecate.com/auth/v1/keys",
+              "audience": ["authenticated"],
+              "roles_key": "role",
+              "roles": ["authenticated", "service_role"],
+              "disable_jwk_security": true
+            }
+          }
+        },
+        {
+          "endpoint": "/v1/donations",
+          "method": "POST",
+          "output_encoding": "json",
+          "backend": [
+            {
+              "url_pattern": "/donations",
+              "encoding": "json",
+              "method": "POST",
+              "host": [
+                "http://advotecate-backend.default.svc.cluster.local:3000"
+              ]
+            }
+          ],
+          "extra_config": {
+            "auth/validator": {
+              "alg": "HS256",
+              "jwk_url": "https://api.advotecate.com/auth/v1/keys",
+              "audience": ["authenticated"],
+              "roles_key": "role",
+              "roles": ["authenticated"],
+              "disable_jwk_security": true
+            }
+          }
+        },
+        {
+          "endpoint": "/v1/donations/{id}",
+          "method": "GET",
+          "output_encoding": "json",
+          "backend": [
+            {
+              "url_pattern": "/donations/{id}",
+              "encoding": "json",
+              "method": "GET",
+              "host": [
+                "http://advotecate-backend.default.svc.cluster.local:3000"
+              ]
+            }
+          ],
+          "extra_config": {
+            "auth/validator": {
+              "alg": "HS256",
+              "jwk_url": "https://api.advotecate.com/auth/v1/keys",
+              "audience": ["authenticated"],
+              "roles_key": "role",
+              "roles": ["authenticated"],
+              "disable_jwk_security": true
+            }
+          }
+        },
+        {
+          "endpoint": "/v1/webhooks/fluidpay",
+          "method": "POST",
+          "output_encoding": "json",
+          "backend": [
+            {
+              "url_pattern": "/webhooks/fluidpay",
+              "encoding": "json",
+              "method": "POST",
+              "host": [
+                "http://advotecate-backend.default.svc.cluster.local:3000"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: krakend-gateway
+  namespace: krakend
+  labels:
+    app: krakend
+    component: gateway
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: krakend
+      component: gateway
+  template:
+    metadata:
+      labels:
+        app: krakend
+        component: gateway
+    spec:
+      containers:
+      - name: krakend
+        image: devopsfaith/krakend:2.4
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 8090
+          name: metrics
+        env:
+        - name: KRAKEND_PORT
+          value: "8080"
+        volumeMounts:
+        - name: krakend-config
+          mountPath: /etc/krakend
+          readOnly: true
+        command: ["/usr/bin/krakend"]
+        args: ["run", "-d", "-c", "/etc/krakend/krakend.json"]
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        readinessProbe:
+          httpGet:
+            path: /__health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /__health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+      volumes:
+      - name: krakend-config
+        configMap:
+          name: krakend-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: krakend-gateway
+  namespace: krakend
+  labels:
+    app: krakend
+    component: gateway
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  - port: 8090
+    targetPort: 8090
+    protocol: TCP
+    name: metrics
+  selector:
+    app: krakend
+    component: gateway
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: krakend-ingress
+  namespace: krakend
+  labels:
+    app: krakend
+    component: ingress
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "advotecate-api-ip"
+    networking.gke.io/managed-certificates: "api-ssl-cert"
+    kubernetes.io/ingress.allow-http: "false"
+spec:
+  rules:
+  - host: api.advotecate.com
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: krakend-gateway
+            port:
+              number: 8080
