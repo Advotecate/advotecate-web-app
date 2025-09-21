@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   typescript: {
     // Skip TypeScript errors during build for MVP deployment
     ignoreBuildErrors: true,

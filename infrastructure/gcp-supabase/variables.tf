@@ -90,8 +90,8 @@ variable "gke_max_node_count" {
   type        = number
   default     = 10
   validation {
-    condition     = var.gke_max_node_count >= var.gke_node_count
-    error_message = "GKE max node count must be greater than or equal to initial node count."
+    condition     = var.gke_max_node_count >= 1 && var.gke_max_node_count <= 100
+    error_message = "GKE max node count must be between 1 and 100."
   }
 }
 

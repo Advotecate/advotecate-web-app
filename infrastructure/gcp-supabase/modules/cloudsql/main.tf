@@ -37,9 +37,6 @@ resource "google_sql_database_instance" "postgres" {
       private_network                               = var.network_id
       enable_private_path_for_google_cloud_services = true
       require_ssl                                   = true
-
-      # Authorized networks (none for private)
-      authorized_networks = []
     }
 
     # Database flags for Supabase optimization

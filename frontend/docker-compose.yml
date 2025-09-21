@@ -1,0 +1,37 @@
+version: '3.8'
+services:
+  frontend:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=cloud-sql-proxy
+      - DB_PORT=5432
+      - DB_NAME=advotecate_payments_dev
+      - DB_USER=advotecate_app_dev
+      - DB_PASSWORD=XPyL97uYXWuLMyaO2nu17MbLC
+      - NEXT_PUBLIC_API_URL=http://localhost:3000/api
+      - NEXT_PUBLIC_ENVIRONMENT=production
+      - NEXT_PUBLIC_FLUIDPAY_ENVIRONMENT=sandbox
+      - NEXT_PUBLIC_FLUIDPAY_DOMAIN=advotecate2026
+    depends_on:
+      - cloud-sql-proxy
+    networks:
+      - app-network
+
+  cloud-sql-proxy:
+    image: gcr.io/cloudsql-docker/gce-proxy:1.33.2
+    command:
+      - "/cloud_sql_proxy"
+      - "-instances=advotecate-dev:us-central1:advotecate-dev-postgres=tcp:0.0.0.0:5432"
+      - "-credential_file=/config/key.json"
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./gcp-key.json:/config/key.json:ro
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

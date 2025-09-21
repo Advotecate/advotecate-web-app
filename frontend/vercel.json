@@ -6,10 +6,14 @@
   "outputDirectory": ".next",
   "installCommand": "npm install",
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://advotecate-api-367966088269.us-central1.run.app/api",
     "NEXT_PUBLIC_ENVIRONMENT": "production",
     "NEXT_PUBLIC_FLUIDPAY_ENVIRONMENT": "sandbox",
-    "NEXT_PUBLIC_FLUIDPAY_DOMAIN": "advotecate2026"
+    "NEXT_PUBLIC_FLUIDPAY_DOMAIN": "advotecate2026",
+    "DB_HOST": "10.229.208.3",
+    "DB_PORT": "5432",
+    "DB_NAME": "advotecate_payments_dev",
+    "DB_USER": "advotecate_app_dev",
+    "DB_PASSWORD": "XPyL97uYXWuLMyaO2nu17MbLC"
   },
   "build": {
     "env": {

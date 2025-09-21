@@ -96,7 +96,7 @@ resource "google_container_cluster" "supabase" {
     enable_components = [
       "SYSTEM_COMPONENTS",
       "WORKLOADS",
-      "API_SERVER"
+      "APISERVER"
     ]
   }
 
@@ -104,7 +104,7 @@ resource "google_container_cluster" "supabase" {
     enable_components = [
       "SYSTEM_COMPONENTS",
       "WORKLOADS",
-      "API_SERVER",
+      "APISERVER",
       "SCHEDULER",
       "CONTROLLER_MANAGER"
     ]
