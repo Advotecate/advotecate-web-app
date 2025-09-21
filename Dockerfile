@@ -25,10 +25,6 @@ COPY frontend/ .
 # Build the Next.js application
 RUN npm run build
 
-# Debug: List files after build
-RUN ls -la /app
-RUN ls -la /app/public || echo "No public directory found"
-
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
