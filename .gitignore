@@ -105,4 +105,4 @@ docker-compose.override.yml
 
 # Backup files
 *.backup
-*.bak
+*.bak**/.terraform/

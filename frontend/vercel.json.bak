@@ -1,0 +1,24 @@
+{
+  "name": "advotecate-frontend-mvp",
+  "version": 2,
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://advotecate-api-367966088269.us-central1.run.app/api",
+    "NEXT_PUBLIC_ENVIRONMENT": "production",
+    "NEXT_PUBLIC_FLUIDPAY_ENVIRONMENT": "sandbox",
+    "NEXT_PUBLIC_FLUIDPAY_DOMAIN": "advotecate2026"
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_ENVIRONMENT": "production"
+    }
+  },
+  "functions": {
+    "app/**/*.{js,jsx,ts,tsx}": {
+      "maxDuration": 30
+    }
+  }
+}
