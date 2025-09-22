@@ -21,8 +21,9 @@ export interface Organization {
   description: string
   logoUrl?: string
   websiteUrl?: string
-  type: 'POLITICAL' | 'PAC' | 'NONPROFIT'
-  isVerified: boolean
+  type: 'POLITICAL' | 'PAC' | 'NONPROFIT' | 'nonprofit'
+  isActive: boolean
+  isVerified?: boolean
   fecId?: string
   createdAt: Date
   updatedAt: Date
@@ -31,18 +32,21 @@ export interface Organization {
 export interface Donation {
   id: string
   amount: number
-  recurring: boolean
+  recurring?: boolean
   frequency?: 'weekly' | 'monthly' | 'quarterly' | 'yearly'
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
-  donorId: string
+  status?: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
+  donorId?: string
+  donorName: string
+  isAnonymous: boolean
+  message?: string
   fundraiserId: string
-  organizationId: string
+  organizationId?: string
   paymentMethodId?: string
   transactionId?: string
   processorTransactionId?: string
   failureReason?: string
   createdAt: Date
-  updatedAt: Date
+  updatedAt?: Date
 }
 
 export interface DonorInfo {
@@ -87,4 +91,50 @@ export interface APIError {
   message: string
   code?: string
   details?: any
+}
+
+export interface User {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  isVerified: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface AuthResponse {
+  user: User
+  token: string
+}
+
+export interface LoginRequest {
+  email: string
+  password: string
+}
+
+export interface RegisterRequest {
+  email: string
+  password: string
+  firstName: string
+  lastName: string
+  createOrganization?: boolean
+  organizationName?: string
+  organizationType?: 'POLITICAL' | 'PAC' | 'NONPROFIT'
+}
+
+export interface OrganizationMember {
+  id: string
+  userId: string
+  organizationId: string
+  role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER'
+  joinedAt: Date
+  user: User
+}
+
+export interface UserOrganization {
+  id: string
+  organizationId: string
+  role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER'
+  organization: Organization
 }

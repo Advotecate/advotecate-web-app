@@ -13,7 +13,11 @@ class APIClient {
   private headers: HeadersInit
 
   constructor() {
-    this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://advotecate-api-367966088269.us-central1.run.app/api'
+    // Use import.meta.env for Vite environment variables with fallback
+    const apiUrl = import.meta?.env?.VITE_API_URL
+      || 'https://advotecate-api-367966088269.us-central1.run.app/api'
+
+    this.baseURL = apiUrl
     this.headers = {
       'Content-Type': 'application/json',
     }
