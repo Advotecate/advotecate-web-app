@@ -7,10 +7,10 @@ import DemoDonation from './pages/DemoDonation';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import OrganizationPage from './pages/Organization';
 import FundraiserPage from './pages/FundraiserPage';
 import EditFundraiserPage from './pages/EditFundraiserPage';
 import EventPage from './pages/EventPage';
+import OrganizationPage from './pages/OrganizationPage';
 import { Target, Star, Phone, MapPin, Users, Calendar, Heart, Megaphone, GraduationCap, Building } from 'lucide-react';
 import type { Fundraiser, Event } from './types/api';
 
@@ -348,6 +348,19 @@ function HomePage() {
     }
   };
 
+  // Helper function to convert organization name to slug
+  const getOrganizationSlug = (organizationName: string) => {
+    const organizationMap: { [key: string]: string } = {
+      'Climate Action Now': 'climate-action-now',
+      'Healthcare for All': 'healthcare-for-all',
+      'Democratic Future PAC': 'democratic-future-pac',
+      'Education First Coalition': 'education-first-coalition',
+      'Voting Rights Alliance': 'voting-rights-alliance',
+      'Democratic Action Network': 'democratic-action-network'
+    };
+    return organizationMap[organizationName] || organizationName.toLowerCase().replace(/\s+/g, '-');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F3FDFB] via-white to-[#E9FBF6]">
       {/* Hero Section */}
@@ -579,7 +592,12 @@ function HomePage() {
 
                           {item.organizationName && (
                             <p className="text-sm text-gray-600 mb-2">
-                              by {item.organizationName}
+                              by <Link
+                                to={`/organization/${getOrganizationSlug(item.organizationName)}`}
+                                className="text-mint-600 hover:text-mint-700 font-medium transition-colors"
+                              >
+                                {item.organizationName}
+                              </Link>
                             </p>
                           )}
 
@@ -861,7 +879,12 @@ function HomePage() {
 
                           {item.organizationName && (
                             <p className="text-sm text-gray-600 mb-2">
-                              by {item.organizationName}
+                              by <Link
+                                to={`/organization/${getOrganizationSlug(item.organizationName)}`}
+                                className="text-mint-600 hover:text-mint-700 font-medium transition-colors"
+                              >
+                                {item.organizationName}
+                              </Link>
                             </p>
                           )}
 
@@ -1119,6 +1142,10 @@ function App() {
           <Route
             path="/event/:eventSlug"
             element={<EventPage />}
+          />
+          <Route
+            path="/organization/:organizationSlug"
+            element={<OrganizationPage />}
           />
         </Routes>
       </AuthProvider>
