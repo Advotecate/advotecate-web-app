@@ -138,3 +138,42 @@ export interface UserOrganization {
   role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER'
   organization: Organization
 }
+
+export interface Event {
+  id: string
+  slug: string
+  title: string
+  description: string
+  eventType: 'PHONE_BANK' | 'CANVASS' | 'VOLUNTEER' | 'RALLY' | 'FUNDRAISER' | 'TRAINING' | 'MEETING'
+  organizationId: string
+  organizationName?: string
+  startTime: Date
+  endTime: Date
+  timeZone: string
+  location?: {
+    name?: string
+    address: string
+    city: string
+    state: string
+    zipCode: string
+    isVirtual: boolean
+    virtualLink?: string
+  }
+  maxAttendees?: number
+  currentAttendees: number
+  isPublic: boolean
+  requiresApproval: boolean
+  instructions?: string
+  contactEmail?: string
+  contactPhone?: string
+  imageUrl?: string
+  tags: string[]
+  accessibility?: {
+    wheelchairAccessible: boolean
+    publicTransitAccessible: boolean
+    childFriendly: boolean
+    notes?: string
+  }
+  createdAt: Date
+  updatedAt: Date
+}

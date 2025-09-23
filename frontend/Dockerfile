@@ -1,40 +1,14 @@
-# Use Node.js 18 Alpine for smaller size
-FROM node:18-alpine AS base
-
-# Install dependencies only when needed
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
+# Build stage
+FROM node:18-alpine as builder
 WORKDIR /app
-
-# Copy package files
-COPY package.json package-lock.json* ./
+COPY package*.json ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
-
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Build the React app with Vite
 RUN npm run build
 
-# Production image using nginx
-FROM nginx:alpine AS runner
-WORKDIR /usr/share/nginx/html
-
-# Install envsubst (part of gettext package in Alpine)
-RUN apk add --no-cache gettext
-
-# Remove default nginx static assets
-RUN rm -rf ./*
-
-# Copy static assets from builder stage
-COPY --from=builder /app/dist .
-
-# Copy nginx configuration template
-COPY nginx.conf /etc/nginx/nginx.conf.template
-
+# Production stage
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 8080
-
-CMD ["sh", "-c", "envsubst '$PORT' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"]
+CMD ["nginx", "-g", "daemon off;"]
