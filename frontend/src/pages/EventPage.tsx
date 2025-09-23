@@ -250,7 +250,7 @@ export default function EventPage() {
   const getEventTypeDisplay = (eventType: Event['eventType']) => {
     const types = {
       'PHONE_BANK': { label: 'Phone Bank', color: 'bg-blue-100 text-blue-800', icon: <Phone className="w-4 h-4" strokeWidth={1.5} /> },
-      'CANVASS': { label: 'Canvass', color: 'bg-green-100 text-green-800', icon: <DoorOpen className="w-4 h-4" strokeWidth={1.5} /> },
+      'CANVASS': { label: 'Canvass', color: 'bg-mint-100 text-mint-800', icon: <DoorOpen className="w-4 h-4" strokeWidth={1.5} /> },
       'VOLUNTEER': { label: 'Volunteer', color: 'bg-purple-100 text-purple-800', icon: <Handshake className="w-4 h-4" strokeWidth={1.5} /> },
       'RALLY': { label: 'Rally', color: 'bg-red-100 text-red-800', icon: <Megaphone className="w-4 h-4" strokeWidth={1.5} /> },
       'FUNDRAISER': { label: 'Fundraiser', color: 'bg-yellow-100 text-yellow-800', icon: <DollarSign className="w-4 h-4" strokeWidth={1.5} /> },
@@ -376,12 +376,12 @@ export default function EventPage() {
               {/* Registration Status */}
               <div className="mb-6">
                 {isRegistered ? (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <div className="bg-mint-50 border border-mint-200 rounded-lg p-4 mb-4">
                     <div className="flex items-center">
-                      <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-5 h-5 text-mint-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
-                      <span className="text-green-800 font-medium">You're registered!</span>
+                      <span className="text-mint-800 font-medium">You're registered!</span>
                     </div>
                   </div>
                 ) : null}
@@ -461,7 +461,7 @@ export default function EventPage() {
                     <p className="text-sm text-gray-600">
                       {event.currentAttendees} registered
                       {spotsLeft && spotsLeft > 0 && (
-                        <span className="text-green-600 block">
+                        <span className="text-mint-600 block">
                           {spotsLeft} spots remaining
                         </span>
                       )}
@@ -512,13 +512,13 @@ export default function EventPage() {
                       <p className="font-medium text-gray-900">Accessibility</p>
                       <div className="text-sm text-gray-600 space-y-1">
                         {event.accessibility.wheelchairAccessible && (
-                          <p className="text-green-600">♿ Wheelchair accessible</p>
+                          <p className="text-mint-600">♿ Wheelchair accessible</p>
                         )}
                         {event.accessibility.publicTransitAccessible && (
-                          <p className="text-green-600">🚇 Public transit accessible</p>
+                          <p className="text-mint-600">🚇 Public transit accessible</p>
                         )}
                         {event.accessibility.childFriendly && (
-                          <p className="text-green-600">👶 Child friendly</p>
+                          <p className="text-mint-600">👶 Child friendly</p>
                         )}
                         {event.accessibility.notes && (
                           <p className="text-gray-600 mt-2">{event.accessibility.notes}</p>

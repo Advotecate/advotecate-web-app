@@ -1,20 +1,37 @@
-// Advotecate Frontend - Payment System
+// Advotecate Frontend - Mixed Feed with Authentication
+import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { AuthProvider } from './hooks/useAuth';
-import ProtectedRoute from './components/ProtectedRoute';
-import DatabaseAdmin from './pages/DatabaseAdmin';
-import DemoDonation from './pages/DemoDonation';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import FundraiserPage from './pages/FundraiserPage';
-import EditFundraiserPage from './pages/EditFundraiserPage';
+import { useAuth, AuthProvider } from './hooks/useAuth';
+import LoginModal from './components/LoginModal';
+import RegisterModal from './components/RegisterModal';
 import EventPage from './pages/EventPage';
 import OrganizationPage from './pages/OrganizationPage';
-import { Target, Star, Phone, MapPin, Users, Calendar, Heart, Megaphone, GraduationCap, Building } from 'lucide-react';
+import { Target, Star, Phone, MapPin, Users, Calendar, Heart, Megaphone, GraduationCap, Building, User, LogOut, DoorOpen, Clipboard, Vote, TrendingUp, Eye, Settings, Shield, Clock, Search } from 'lucide-react';
 import type { Fundraiser, Event } from './types/api';
 
 function HomePage() {
+  const { isAuthenticated, user, logout } = useAuth();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+
+  const handleProtectedAction = (action: () => void) => {
+    if (isAuthenticated) {
+      action();
+    } else {
+      setShowLoginModal(true);
+    }
+  };
+
+  const switchToRegister = () => {
+    setShowLoginModal(false);
+    setShowRegisterModal(true);
+  };
+
+  const switchToLogin = () => {
+    setShowRegisterModal(false);
+    setShowLoginModal(true);
+  };
+
   // Mock fundraiser data
   const mockFundraisers: Fundraiser[] = [
     {
@@ -317,7 +334,7 @@ function HomePage() {
   const getEventTypeDisplay = (eventType: Event['eventType']) => {
     const types = {
       'PHONE_BANK': { label: 'Phone Bank', color: 'bg-blue-100 text-blue-800' },
-      'CANVASS': { label: 'Canvass', color: 'bg-green-100 text-green-800' },
+      'CANVASS': { label: 'Canvass', color: 'bg-mint-100 text-mint-800' },
       'VOLUNTEER': { label: 'Volunteer', color: 'bg-purple-100 text-purple-800' },
       'RALLY': { label: 'Rally', color: 'bg-red-100 text-red-800' },
       'FUNDRAISER': { label: 'Fundraiser', color: 'bg-yellow-100 text-yellow-800' },
@@ -363,6 +380,57 @@ function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F3FDFB] via-white to-[#E9FBF6]">
+      {/* Navigation Header */}
+      <nav className="bg-white/80 backdrop-blur-md border-b border-mint-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center">
+              <h2 className="text-2xl font-bold text-gray-900 font-Poppins">
+                Advotecate
+              </h2>
+            </div>
+            <div className="flex items-center space-x-4">
+              {isAuthenticated ? (
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <User className="w-5 h-5 text-gray-600" strokeWidth={1.5} />
+                    <span className="text-gray-700 font-Figtree">
+                      {user?.firstName} {user?.lastName}
+                    </span>
+                  </div>
+                  <button
+                    onClick={logout}
+                    className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors font-Figtree"
+                  >
+                    <LogOut className="w-4 h-4" strokeWidth={1.5} />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={() => setShowLoginModal(true)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors font-Figtree"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => setShowRegisterModal(true)}
+                    className="px-4 py-2 rounded-xl text-white transition-all hover:scale-105 font-Figtree"
+                    style={{
+                      background: 'linear-gradient(135deg, #02cb97 0%, #3EB489 100%)',
+                      boxShadow: '0 4px 16px rgba(2, 203, 151, 0.25)',
+                    }}
+                  >
+                    Get Started
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </nav>
+
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-br from-[#F3FDFB] via-white to-[#E9FBF6]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
@@ -458,7 +526,7 @@ function HomePage() {
                         {/* Fundraiser Image */}
                         <div className="md:flex-shrink-0">
                           <img
-                            className="h-48 w-full object-cover md:w-64"
+                            className="h-full w-full object-cover"
                             src={item.imageUrl}
                             alt={item.title}
                           />
@@ -493,7 +561,7 @@ function HomePage() {
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-3">
                               <div
-                                className="bg-green-500 h-3 rounded-full transition-all duration-300"
+                                className="bg-mint-600 h-3 rounded-full transition-all duration-300"
                                 style={{ width: `${progress}%` }}
                               ></div>
                             </div>
@@ -502,8 +570,11 @@ function HomePage() {
                           {/* Actions */}
                           <div className="flex items-center justify-between">
                             <div className="flex space-x-3">
-                              <Link
-                                to="/demo"
+                              <button
+                                onClick={() => handleProtectedAction(() => {
+                                  // Navigate to donation page or open donation modal
+                                  window.location.href = '/demo';
+                                })}
                                 className="px-6 py-3 rounded-2xl font-medium text-white transition-all transform hover:-translate-y-0.5"
                                 style={{
                                   background: 'linear-gradient(135deg, #02cb97 0%, #3EB489 100%)',
@@ -520,7 +591,7 @@ function HomePage() {
                                 }}
                               >
                                 Donate Now
-                              </Link>
+                              </button>
                               <button
                                 className="bg-white text-[#111827] border border-[#E5E7EB] px-6 py-3 rounded-2xl font-medium transition-all transform hover:-translate-y-0.5 hover:border-[#3EB489]"
                                 style={{
@@ -558,7 +629,7 @@ function HomePage() {
                         {/* Event Image */}
                         <div className="md:flex-shrink-0">
                           <img
-                            className="h-48 w-full object-cover md:w-64"
+                            className="h-full w-full object-cover"
                             src={item.imageUrl}
                             alt={item.title}
                           />
@@ -632,21 +703,27 @@ function HomePage() {
                               </svg>
                               <span>{item.currentAttendees} attending</span>
                               {spotsLeft && spotsLeft > 0 && (
-                                <span className="text-green-600 ml-2">
+                                <span className="text-mint-600 ml-2">
                                   ({spotsLeft} spots left)
                                 </span>
                               )}
                             </div>
 
                             {item.accessibility?.wheelchairAccessible && (
-                              <div className="flex items-center text-green-600">
+                              <div className="flex items-center text-mint-600">
                                 <span>♿ Accessible</span>
                               </div>
                             )}
                           </div>
 
                           {/* Action Button */}
-                          <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg font-semibold transition-colors">
+                          <button
+                            onClick={() => handleProtectedAction(() => {
+                              // Handle event registration
+                              alert(`Registering for: ${item.title}`);
+                            })}
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg font-semibold transition-colors"
+                          >
                             {item.requiresApproval ? 'Request to Join' : 'Sign Up to Attend'}
                           </button>
                         </div>
@@ -695,8 +772,8 @@ function HomePage() {
 
           {/* Connect Supporters Card */}
           <div className="bg-white shadow-xl rounded-xl p-8 text-center hover:shadow-2xl transition-shadow">
-            <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-mint-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-8 h-8 text-mint-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
@@ -708,7 +785,7 @@ function HomePage() {
             </p>
             <Link
               to="/demo"
-              className="inline-block bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              className="inline-block bg-mint-600 hover:bg-mint-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
             >
               See Demo
             </Link>
@@ -767,7 +844,7 @@ function HomePage() {
                         {/* Fundraiser Image */}
                         <div className="md:flex-shrink-0">
                           <img
-                            className="h-48 w-full object-cover md:w-64"
+                            className="h-full w-full object-cover"
                             src={item.imageUrl}
                             alt={item.title}
                           />
@@ -777,7 +854,7 @@ function HomePage() {
                         <div className="p-6 flex-1">
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex items-center">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-mint-100 text-mint-800">
                                 <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                                 </svg>
@@ -804,7 +881,7 @@ function HomePage() {
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div
-                                className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                                className="bg-mint-600 h-2 rounded-full transition-all duration-300"
                                 style={{ width: `${progress}%` }}
                               ></div>
                             </div>
@@ -813,12 +890,15 @@ function HomePage() {
                           {/* Actions */}
                           <div className="flex items-center justify-between">
                             <div className="flex space-x-3">
-                              <Link
-                                to="/demo"
-                                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                              <button
+                                onClick={() => handleProtectedAction(() => {
+                                  // Navigate to donation page or open donation modal
+                                  window.location.href = '/demo';
+                                })}
+                                className="bg-mint-600 hover:bg-mint-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
                               >
                                 Donate Now
-                              </Link>
+                              </button>
                               <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors text-sm">
                                 Learn More
                               </button>
@@ -844,7 +924,7 @@ function HomePage() {
                         {/* Event Image */}
                         <div className="md:flex-shrink-0">
                           <img
-                            className="h-48 w-full object-cover md:w-64"
+                            className="h-full w-full object-cover"
                             src={item.imageUrl}
                             alt={item.title}
                           />
@@ -919,12 +999,12 @@ function HomePage() {
                               </svg>
                               <span>{item.currentAttendees} attending</span>
                               {spotsLeft && spotsLeft > 0 && (
-                                <span className="text-green-600 ml-2">
+                                <span className="text-mint-600 ml-2">
                                   ({spotsLeft} spots left)
                                 </span>
                               )}
                               {item.accessibility?.wheelchairAccessible && (
-                                <span className="text-green-600 ml-4">
+                                <span className="text-mint-600 ml-4">
                                   ♿ Accessible
                                 </span>
                               )}
@@ -932,7 +1012,13 @@ function HomePage() {
                           </div>
 
                           {/* Action Button */}
-                          <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm">
+                          <button
+                            onClick={() => handleProtectedAction(() => {
+                              // Handle event registration
+                              alert(`Registering for: ${item.title}`);
+                            })}
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
+                          >
                             {item.requiresApproval ? 'Request to Join' : 'Sign Up to Attend'}
                           </button>
                         </div>
@@ -949,7 +1035,7 @@ function HomePage() {
             <div className="flex justify-center space-x-4 flex-wrap gap-2">
               <Link
                 to="/register"
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-green-600 bg-green-100 hover:bg-green-200 transition-colors"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-mint-600 bg-mint-100 hover:bg-mint-200 transition-colors"
               >
                 View All Campaigns
                 <svg className="ml-2 -mr-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -983,8 +1069,8 @@ function HomePage() {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white p-8 rounded-xl shadow-lg text-center hover:shadow-xl transition-shadow">
-              <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-mint-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-8 h-8 text-mint-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </div>
@@ -1015,31 +1101,6 @@ function HomePage() {
         </div>
       </div>
 
-      {/* Call to Action Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
-            Ready to Make a Difference?
-          </h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of advocates who are using Advotecate to create positive change in their communities and beyond.
-          </p>
-          <div className="flex justify-center space-x-4">
-            <Link
-              to="/register"
-              className="inline-block bg-white text-blue-600 hover:bg-gray-100 px-8 py-4 rounded-lg font-semibold text-lg transition-colors shadow-lg"
-            >
-              Start Your Campaign Today
-            </Link>
-            <Link
-              to="/demo"
-              className="inline-block border-2 border-white text-white hover:bg-white hover:text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
-            >
-              See How It Works
-            </Link>
-          </div>
-        </div>
-      </div>
 
       {/* Footer Section */}
       <div className="bg-gray-900 py-12">
@@ -1051,14 +1112,14 @@ function HomePage() {
             </div>
             <div className="grid grid-cols-2 gap-6 text-sm">
               <div className="flex items-center">
-                <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                <div className="w-3 h-3 bg-mint-600 rounded-full mr-3"></div>
                 <span className="text-gray-300 font-medium">Platform Status</span>
-                <span className="ml-auto text-green-400">Online</span>
+                <span className="ml-auto text-mint-500">Online</span>
               </div>
               <div className="flex items-center">
-                <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                <div className="w-3 h-3 bg-mint-600 rounded-full mr-3"></div>
                 <span className="text-gray-300 font-medium">Security</span>
-                <span className="ml-auto text-green-400">Secure</span>
+                <span className="ml-auto text-mint-500">Secure</span>
               </div>
               <div className="flex items-center">
                 <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
@@ -1066,14 +1127,26 @@ function HomePage() {
                 <span className="ml-auto text-blue-400">Production</span>
               </div>
               <div className="flex items-center">
-                <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                <div className="w-3 h-3 bg-mint-600 rounded-full mr-3"></div>
                 <span className="text-gray-300 font-medium">Support</span>
-                <span className="ml-auto text-green-400">24/7</span>
+                <span className="ml-auto text-mint-500">24/7</span>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Authentication Modals */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSwitchToRegister={switchToRegister}
+      />
+      <RegisterModal
+        isOpen={showRegisterModal}
+        onClose={() => setShowRegisterModal(false)}
+        onSwitchToLogin={switchToLogin}
+      />
     </div>
   );
 }
@@ -1083,70 +1156,12 @@ function App() {
     <Router>
       <AuthProvider>
         <Routes>
-          {/* Public routes */}
+          {/* Main route with authentication */}
           <Route path="/" element={<HomePage />} />
-          <Route path="/demo" element={<DemoDonation />} />
-          <Route path="/admin/database" element={<DatabaseAdmin />} />
 
-          {/* Authentication routes */}
-          <Route
-            path="/login"
-            element={
-              <ProtectedRoute requireAuth={false}>
-                <Login />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <ProtectedRoute requireAuth={false}>
-                <Register />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Protected routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/org/:slug"
-            element={
-              <ProtectedRoute>
-                <OrganizationPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/org/:orgSlug/fundraiser/:fundraiserSlug"
-            element={
-              <ProtectedRoute>
-                <FundraiserPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/org/:orgSlug/fundraiser/:fundraiserSlug/edit"
-            element={
-              <ProtectedRoute>
-                <EditFundraiserPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/event/:eventSlug"
-            element={<EventPage />}
-          />
-          <Route
-            path="/organization/:organizationSlug"
-            element={<OrganizationPage />}
-          />
+          {/* Event and Organization detail pages */}
+          <Route path="/event/:eventSlug" element={<EventPage />} />
+          <Route path="/organization/:organizationSlug" element={<OrganizationPage />} />
         </Routes>
       </AuthProvider>
     </Router>

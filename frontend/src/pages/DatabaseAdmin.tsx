@@ -126,10 +126,10 @@ export default function DatabaseAdminPage() {
           </div>
 
           {status && (
-            <div className={`p-4 rounded-md ${status.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+            <div className={`p-4 rounded-md ${status.success ? 'bg-mint-50 border border-mint-200' : 'bg-red-50 border border-red-200'}`}>
               <div className="flex items-center">
-                <div className={`w-3 h-3 rounded-full mr-3 ${status.success ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                <span className={`font-medium ${status.success ? 'text-green-800' : 'text-red-800'}`}>
+                <div className={`w-3 h-3 rounded-full mr-3 ${status.success ? 'bg-mint-600' : 'bg-red-500'}`}></div>
+                <span className={`font-medium ${status.success ? 'text-mint-800' : 'text-red-800'}`}>
                   {status.success ? 'Connected' : 'Connection Failed'}
                 </span>
               </div>
@@ -214,7 +214,7 @@ export default function DatabaseAdminPage() {
               </button>
               <button
                 onClick={createTestPayment}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
+                className="bg-mint-600 hover:bg-mint-700 text-white px-4 py-2 rounded-md"
               >
                 Create Test Payment
               </button>
@@ -244,7 +244,7 @@ export default function DatabaseAdminPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          payment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          payment.status === 'completed' ? 'bg-mint-100 text-mint-800' :
                           payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                           payment.status === 'failed' ? 'bg-red-100 text-red-800' :
                           'bg-gray-100 text-gray-800'

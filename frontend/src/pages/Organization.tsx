@@ -183,7 +183,7 @@ export default function OrganizationPage() {
                     {organization.type}
                   </span>
                   {organization.isVerified && (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-mint-100 text-mint-800">
                       Verified
                     </span>
                   )}
@@ -274,7 +274,7 @@ export default function OrganizationPage() {
                       <dd className="mt-1">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           organization.isActive
-                            ? 'bg-green-100 text-green-800'
+                            ? 'bg-mint-100 text-mint-800'
                             : 'bg-red-100 text-red-800'
                         }`}>
                           {organization.isActive ? 'Active' : 'Inactive'}

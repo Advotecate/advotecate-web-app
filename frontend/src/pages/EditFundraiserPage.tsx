@@ -242,15 +242,15 @@ export default function EditFundraiserPage() {
 
           {/* Success Message */}
           {successMessage && (
-            <div className="mx-6 mt-6 rounded-md bg-green-50 p-4">
+            <div className="mx-6 mt-6 rounded-md bg-mint-50 p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="h-5 w-5 text-mint-500" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-green-800">{successMessage}</p>
+                  <p className="text-sm font-medium text-mint-800">{successMessage}</p>
                 </div>
               </div>
             </div>
@@ -429,7 +429,7 @@ export default function EditFundraiserPage() {
                 </div>
                 <div>
                   <span className="text-gray-500">Status:</span>
-                  <span className={`ml-2 font-medium ${fundraiser.isActive ? 'text-green-600' : 'text-gray-600'}`}>
+                  <span className={`ml-2 font-medium ${fundraiser.isActive ? 'text-mint-600' : 'text-gray-600'}`}>
                     {fundraiser.isActive ? 'Active' : 'Inactive'}
                   </span>
                 </div>

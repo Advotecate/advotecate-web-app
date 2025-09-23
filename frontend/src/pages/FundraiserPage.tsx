@@ -105,7 +105,7 @@ export default function FundraiserPage() {
   }
 
   const getProgressColor = (percentage: number) => {
-    if (percentage >= 100) return 'bg-green-500'
+    if (percentage >= 100) return 'bg-mint-600'
     if (percentage >= 75) return 'bg-mint-500'
     if (percentage >= 50) return 'bg-yellow-500'
     return 'bg-blue-500'
@@ -193,7 +193,7 @@ export default function FundraiserPage() {
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-3xl font-bold text-gray-900">{fundraiser.title}</h1>
               <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium ${
-                fundraiser.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                fundraiser.isActive ? 'bg-mint-100 text-mint-800' : 'bg-gray-100 text-gray-800'
               }`}>
                 {fundraiser.isActive ? 'Active' : 'Inactive'}
               </span>
@@ -239,11 +239,11 @@ export default function FundraiserPage() {
                 </div>
                 <div className="text-sm text-blue-800">Days Left</div>
               </div>
-              <div className="bg-green-50 rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-green-600">
+              <div className="bg-mint-50 rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-mint-600">
                   ${Math.round(donations.reduce((sum, d) => sum + d.amount, 0) / donations.length)}
                 </div>
-                <div className="text-sm text-green-800">Average Donation</div>
+                <div className="text-sm text-mint-800">Average Donation</div>
               </div>
             </div>
 

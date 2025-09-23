@@ -50,7 +50,7 @@ export default function MembersList({
       case 'ADMIN':
         return 'bg-blue-100 text-blue-800'
       case 'MEMBER':
-        return 'bg-green-100 text-green-800'
+        return 'bg-mint-100 text-mint-800'
       case 'VIEWER':
         return 'bg-gray-100 text-gray-800'
       default:

@@ -21,7 +21,7 @@ export default function FundraisersList({
   }
 
   const getProgressColor = (percentage: number) => {
-    if (percentage >= 100) return 'bg-green-500'
+    if (percentage >= 100) return 'bg-mint-600'
     if (percentage >= 75) return 'bg-mint-500'
     if (percentage >= 50) return 'bg-yellow-500'
     return 'bg-blue-500'
@@ -72,7 +72,7 @@ export default function FundraisersList({
                       </h3>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         fundraiser.isActive
-                          ? 'bg-green-100 text-green-800'
+                          ? 'bg-mint-100 text-mint-800'
                           : 'bg-gray-100 text-gray-800'
                       }`}>
                         {fundraiser.isActive ? 'Active' : 'Inactive'}
@@ -91,7 +91,7 @@ export default function FundraisersList({
                           className={`inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                             fundraiser.isActive
                               ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
-                              : 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
+                              : 'bg-mint-600 hover:bg-mint-700 focus:ring-mint-500'
                           }`}
                         >
                           {fundraiser.isActive ? 'Pause' : 'Activate'}

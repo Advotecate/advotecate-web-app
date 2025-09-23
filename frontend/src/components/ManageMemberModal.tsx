@@ -159,7 +159,7 @@ export default function ManageMemberModal({
                       <div className="flex items-center space-x-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           member.user.isVerified
-                            ? 'bg-green-100 text-green-800'
+                            ? 'bg-mint-100 text-mint-800'
                             : 'bg-yellow-100 text-yellow-800'
                         }`}>
                           {member.user.isVerified ? 'Verified' : 'Pending Verification'}

@@ -59,7 +59,7 @@ export default function DemoDonation() {
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
-                    className="bg-green-600 h-2 rounded-full"
+                    className="bg-mint-600 h-2 rounded-full"
                     style={{ width: `${(mockFundraiser.currentAmount / mockFundraiser.goalAmount) * 100}%` }}
                   />
                 </div>
@@ -74,7 +74,7 @@ export default function DemoDonation() {
               <p className="text-gray-600 mb-4">{mockOrganization.description}</p>
               <div className="flex items-center space-x-4 text-sm text-gray-500">
                 <div className="flex items-center">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
+                  <div className="w-2 h-2 bg-mint-600 rounded-full mr-2" />
                   Verified Organization
                 </div>
                 <div>FEC ID: {mockOrganization.fecId}</div>
