@@ -15,7 +15,7 @@ class APIClient {
   constructor() {
     // Use import.meta.env for Vite environment variables with fallback
     const apiUrl = import.meta?.env?.VITE_API_URL
-      || 'https://advotecate-api-367966088269.us-central1.run.app/api'
+      || 'https://advotecate-api-367966088269.us-central1.run.app/api/v1'
 
     this.baseURL = apiUrl
     this.headers = {

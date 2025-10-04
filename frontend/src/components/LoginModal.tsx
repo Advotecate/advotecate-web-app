@@ -58,21 +58,21 @@ export default function LoginModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative bg-gradient-to-r from-mint-400 to-mint-600 px-6 py-8">
+        <div className="relative px-6 pt-6 pb-4 bg-white border-b border-gray-100">
           <button
             onClick={handleClose}
-            className="absolute top-4 right-4 text-white hover:text-mint-100 transition-colors"
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Close sign-in modal"
           >
             <X className="w-6 h-6" strokeWidth={1.5} />
           </button>
 
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-white mb-2 font-Poppins">
-              Welcome Back
-            </h2>
-            <p className="text-mint-100 font-Figtree">
-              Sign in to continue your advocacy journey
-            </p>
+          <div className="flex justify-center">
+            <img
+              src="/img/cropped-logo-sq.png"
+              alt="Advotecate logo"
+              className="h-12 w-auto"
+            />
           </div>
         </div>
 

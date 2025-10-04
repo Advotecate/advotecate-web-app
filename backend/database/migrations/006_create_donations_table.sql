@@ -1,6 +1,6 @@
 -- Donations table (partitioned by date for performance)
 CREATE TABLE donations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID DEFAULT gen_random_uuid(),
     fundraiser_id UUID NOT NULL REFERENCES fundraisers(id),
     user_id UUID NOT NULL REFERENCES users(id),
     organization_id UUID NOT NULL REFERENCES organizations(id),
@@ -29,7 +29,7 @@ CREATE TABLE donations (
     -- Recurring Donation Support
     is_recurring BOOLEAN DEFAULT false,
     recurring_frequency VARCHAR(20) CHECK (recurring_frequency IN ('monthly', 'quarterly', 'annually')),
-    parent_donation_id UUID REFERENCES donations(id), -- for recurring donations
+    parent_donation_id UUID, -- for recurring donations (no FK due to partitioning)
     subscription_id VARCHAR(255), -- FluidPay subscription ID
 
     -- Compliance Information
@@ -50,8 +50,10 @@ CREATE TABLE donations (
     failed_at TIMESTAMP,
 
     -- Audit Fields
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id, created_at)
 ) PARTITION BY RANGE (created_at);
 
 -- Create initial monthly partitions

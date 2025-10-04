@@ -1,30 +1,45 @@
-# Simple Dockerfile for MVP deployment
+# Production Dockerfile for Enhanced API
 FROM node:18-alpine
 
-# Create app directory
+# Install security updates
+RUN apk --no-cache upgrade
+
+# Create app directory and non-root user
 WORKDIR /app
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S advotecate -u 1001 -G nodejs
 
 # Copy package files
 COPY package*.json ./
 
 # Install only production dependencies
-RUN npm install --only=production
+RUN npm install --only=production && \
+    npm cache clean --force && \
+    rm -rf /tmp/* /var/cache/apk/*
 
-# Copy simple server
-COPY simple-server.js ./
+# Copy enhanced server
+COPY --chown=advotecate:nodejs enhanced-server.js ./
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S advotecate -u 1001
+# Create data directory for file storage
+RUN mkdir -p /app/data && chown -R advotecate:nodejs /app/data
 
-# Change ownership
+# Set proper ownership
 RUN chown -R advotecate:nodejs /app
+
+# Switch to non-root user
 USER advotecate
 
-# Expose port (Cloud Run will set PORT env var)
-EXPOSE 8080
+# Expose port (Cloud Run uses PORT environment variable)
+EXPOSE $PORT
 
-# No health check for Cloud Run (it has its own health checks)
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node -e "const port = process.env.PORT || 3002; require('http').get('http://localhost:' + port + '/health', (res) => { \
+    process.exit(res.statusCode === 200 ? 0 : 1) \
+  }).on('error', () => process.exit(1))"
 
-# Start the application
-CMD ["node", "simple-server.js"]
+# Set production environment
+ENV NODE_ENV=production
+
+# Start the enhanced server
+CMD ["node", "enhanced-server.js"]

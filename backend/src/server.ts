@@ -16,9 +16,12 @@ import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import organizationRoutes from './routes/organizations.js';
 import fundraiserRoutes from './routes/fundraisers.js';
+import eventRoutes from './routes/events.js';
 import donationRoutes from './routes/donations.js';
+import adminRoutes from './routes/admin.js';
 import webhookRoutes from './routes/webhooks.js';
 import healthRoutes from './routes/health.js';
+import interestRoutes from './routes/interests.js';
 
 class AdvotecateServer {
   private app: express.Application;
@@ -82,7 +85,12 @@ class AdvotecateServer {
     apiV1.use('/users', userRoutes);
     apiV1.use('/organizations', organizationRoutes);
     apiV1.use('/fundraisers', fundraiserRoutes);
+    apiV1.use('/events', eventRoutes);
     apiV1.use('/donations', rateLimitConfigs.donations, donationRoutes);
+    apiV1.use('/interests', interestRoutes);
+
+    // Admin routes (protected)
+    apiV1.use('/admin', adminRoutes);
 
     // Mount API under /api/v1
     this.app.use('/api/v1', apiV1);
@@ -98,7 +106,10 @@ class AdvotecateServer {
           users: '/api/v1/users',
           organizations: '/api/v1/organizations',
           fundraisers: '/api/v1/fundraisers',
+          events: '/api/v1/events',
           donations: '/api/v1/donations',
+          interests: '/api/v1/interests',
+          admin: '/api/v1/admin',
           webhooks: '/api/v1/webhooks',
           health: '/health'
         },

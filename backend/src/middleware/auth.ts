@@ -3,6 +3,7 @@ import { jwtService } from '../auth/jwt.js';
 import { sessionManager } from '../auth/session.js';
 import { rbacService } from '../auth/rbac.js';
 import { UserPayload } from '../types/auth.js';
+import { checkUserPermission } from '../services/permissionService.js';
 
 // Extend Request interface to include user data
 declare global {
@@ -83,23 +84,27 @@ export function authenticate(options: AuthOptions = {}) {
         return;
       }
 
-      // Check specific permissions
+      // Check specific permissions using NEW Supabase permissions system
       if (options.requiredPermission) {
-        const hasPermission = await rbacService.hasPermission(
-          {
-            id: userPayload.userId,
-            roles: [userPayload.role],
-            organizations: userPayload.organizations
-          },
-          options.requiredPermission.resource,
-          options.requiredPermission.action,
-          extractContextFromRequest(req)
+        // Extract organization ID from request context
+        const context = extractContextFromRequest(req);
+        const organizationId = context.organizationId || req.body?.organization_id;
+
+        // Format permission name: resource.action (e.g., "fundraiser.create")
+        const permissionName = `${options.requiredPermission.resource}.${options.requiredPermission.action}`;
+
+        // Check permission using Supabase database function
+        const hasPermission = await checkUserPermission(
+          userPayload.userId,
+          permissionName,
+          organizationId
         );
 
         if (!hasPermission) {
           res.status(403).json({
             error: 'Insufficient permissions',
-            code: 'INSUFFICIENT_PERMISSIONS'
+            code: 'INSUFFICIENT_PERMISSIONS',
+            requiredPermission: permissionName
           });
           return;
         }

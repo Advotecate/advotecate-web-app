@@ -1,0 +1,31 @@
+{
+  "organizations": [
+    {
+      "id": "org_1",
+      "name": "Climate Action Now",
+      "slug": "climate-action-now"
+    },
+    {
+      "id": "org_2",
+      "name": "Education First",
+      "slug": "education-first"
+    },
+    {
+      "id": "org_3",
+      "name": "Healthcare for All",
+      "slug": "healthcare-for-all"
+    },
+    {
+      "id": "org_1758784249516",
+      "slug": "test-persistence-organization",
+      "name": "Test Persistence Organization",
+      "description": "Testing file persistence",
+      "contact_email": "test@persistence.com",
+      "is_active": true,
+      "created_at": "2025-09-25T07:10:49.517Z"
+    }
+  ],
+  "users": [],
+  "fundraisers": [],
+  "events": []
+}

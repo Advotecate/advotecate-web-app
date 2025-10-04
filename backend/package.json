@@ -1,16 +1,61 @@
 {
-  "name": "advotecate-api-mvp",
+  "name": "advotecate-backend-api",
   "version": "1.0.0",
-  "description": "Advotecate MVP API",
-  "main": "simple-server.js",
+  "description": "Advotecate Backend API Server",
+  "main": "dist/server.js",
+  "type": "module",
   "scripts": {
-    "start": "node simple-server.js"
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "test": "jest",
+    "db:migrate": "node scripts/migrate.js",
+    "db:seed": "node scripts/seed.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5"
+    "@supabase/supabase-js": "^2.58.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/qrcode": "^1.5.5",
+    "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.2",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.21.2",
+    "express-rate-limit": "^6.10.0",
+    "helmet": "^7.0.0",
+    "jose": "^6.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "otplib": "^12.0.1",
+    "pg": "^8.11.3",
+    "qrcode": "^1.5.4",
+    "redis": "^5.8.2",
+    "winston": "^3.10.0",
+    "zod": "^3.22.2"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.0",
+    "@types/compression": "^1.7.2",
+    "@types/cookie-parser": "^1.4.3",
+    "@types/cors": "^2.8.13",
+    "@types/express": "^4.17.17",
+    "@types/jest": "^29.5.4",
+    "@types/jsonwebtoken": "^9.0.2",
+    "@types/node": "^20.5.0",
+    "@types/pg": "^8.10.2",
+    "@typescript-eslint/eslint-plugin": "^6.4.0",
+    "@typescript-eslint/parser": "^6.4.0",
+    "eslint": "^8.47.0",
+    "jest": "^29.6.2",
+    "tsx": "^3.12.7",
+    "typescript": "^5.1.6"
   },
   "engines": {
-    "node": "18"
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }
