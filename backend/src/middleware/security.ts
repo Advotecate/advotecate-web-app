@@ -72,6 +72,7 @@ export function corsConfig(req: Request, res: Response, next: NextFunction): voi
   const origin = req.get('Origin');
   const allowedOrigins = [
     config.app.frontendUrl,
+    'https://app.advotecate.com', // Production frontend
     'http://localhost:3000',
     'https://localhost:3000',
     'http://localhost:3001',
