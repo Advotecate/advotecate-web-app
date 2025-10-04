@@ -1,16 +1,15 @@
 {
   "version": 2,
-  "name": "advotecate-backend-api",
   "builds": [
     {
-      "src": "package.json",
+      "src": "dist/server.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/dist/server.js"
+      "dest": "dist/server.js"
     }
   ],
   "env": {
