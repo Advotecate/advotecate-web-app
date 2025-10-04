@@ -1,3 +1,0 @@
-constraint: constraints/sql.restrictPublicIp
-booleanPolicy:
-  enforced: false

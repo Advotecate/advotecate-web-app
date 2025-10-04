@@ -1,7 +1,19 @@
 {
   "version": 2,
-  "name": "advotecate-backend-mvp",
-  "builds": [{ "src": "simple-server.js", "use": "@vercel/node" }],
-  "routes": [{ "src": "/(.*)", "dest": "/simple-server.js" }],
-  "env": { "NODE_ENV": "production" }
+  "name": "advotecate-backend-api",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/dist/server.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 }

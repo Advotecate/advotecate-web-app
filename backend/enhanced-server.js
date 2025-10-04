@@ -12,14 +12,14 @@ import { z } from 'zod';
 
 const { Pool } = pkg;
 const app = express();
-const PORT = process.env.PORT || 3002; // Cloud Run uses PORT env var
+const PORT = process.env.PORT || 3002;
 
 console.log('🚀 Starting Enhanced Advotecate API Server...');
 
 // Enhanced Security Middleware
 app.use(helmet());
 app.use(compression());
-// Trust proxy for Cloud Run
+// Trust proxy for Vercel
 app.set('trust proxy', true);
 
 app.use(cors({
@@ -42,7 +42,7 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 
-// Rate Limiting - Configure for Cloud Run
+// Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 1000, // limit each IP to 1000 requests per windowMs
@@ -85,12 +85,11 @@ async function initializeDatabase() {
 
     // Handle different connection types
     if (isSocketConnection) {
-      // Cloud SQL socket connection (Cloud Run)
+      // Socket connection (Unix socket)
       dbConfig.host = dbHost;
-      console.log('🔌 Attempting Cloud SQL socket connection to:', dbHost);
-      console.log('📦 Environment check - Cloud SQL instances:', process.env.CLOUD_SQL_INSTANCES || 'not set');
+      console.log('🔌 Attempting socket connection to:', dbHost);
     } else {
-      // TCP connection (local or external IP)
+      // TCP connection (local or Supabase)
       dbConfig.host = dbHost;
       dbConfig.port = parseInt(process.env.DB_PORT) || 5432;
       console.log('🔌 Attempting TCP connection to:', `${dbHost}:${dbConfig.port}/${dbConfig.database}`);
@@ -108,7 +107,7 @@ async function initializeDatabase() {
 
     pool = new Pool(dbConfig);
 
-    // Test connection with extended timeout for Cloud SQL
+    // Test connection with retries
     let retries = isSocketConnection ? 2 : 3; // Fewer retries for socket connections
     let delay = isSocketConnection ? 5000 : 2000; // Longer delay for socket connections
 

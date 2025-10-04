@@ -106,3 +106,6 @@ docker-compose.override.yml
 # Backup files
 *.backup
 *.bak**/.terraform/
+
+# GCP Archive (migrated to Vercel)
+.gcp-archive/

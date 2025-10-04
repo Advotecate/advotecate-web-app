@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { interestController } from '../controllers/interestController';
 import { auth } from '../middleware/auth';
-import { adminAuth } from '../middleware/adminAuth';
+import { adminAuth } from '../middleware/adminAuth.js';
 
 const router = Router();
 

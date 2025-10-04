@@ -20,8 +20,12 @@
     "typecheck:frontend": "cd frontend && npm run typecheck",
     "db:migrate": "cd backend && npm run db:migrate",
     "db:seed": "cd backend && npm run db:seed",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down"
+    "deploy": "npm run deploy:backend && npm run deploy:frontend",
+    "deploy:backend": "cd backend && vercel --prod",
+    "deploy:frontend": "cd frontend && vercel --prod",
+    "supabase:pull": "./scripts/supabase-pull.sh",
+    "supabase:seed": "./scripts/supabase-seed-from-prod.sh",
+    "supabase:status": "./scripts/supabase-status.sh"
   },
   "workspaces": [
     "backend",
