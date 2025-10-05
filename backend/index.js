@@ -1,4 +1,4 @@
-// Vercel serverless entry point
+// Vercel serverless entry point - ULTRA MINIMAL VERSION
 import express from 'express';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
@@ -8,17 +8,8 @@ import { securityHeaders, corsConfig, securityScanner, sanitizeInput } from './d
 import { requestLogger, errorLogger } from './dist/middleware/logging.js';
 import { rateLimitConfigs } from './dist/middleware/rateLimiting.js';
 
-// Import routes
-import authRoutes from './dist/routes/auth.js';
-import userRoutes from './dist/routes/users.js';
-import organizationRoutes from './dist/routes/organizations.js';
-import fundraiserRoutes from './dist/routes/fundraisers.js';
-import eventRoutes from './dist/routes/events.js';
-import donationRoutes from './dist/routes/donations.js';
-import adminRoutes from './dist/routes/admin.js';
-import webhookRoutes from './dist/routes/webhooks.js';
+// Import only working routes
 import healthRoutes from './dist/routes/health.js';
-import interestRoutes from './dist/routes/interests.js';
 
 const app = express();
 
@@ -48,23 +39,22 @@ app.use(rateLimitConfigs.global);
 // Health check
 app.use('/health', healthRoutes);
 
-// API routes (mounted at root for direct access)
-app.use('/auth', rateLimitConfigs.auth, authRoutes);
-app.use('/webhooks', rateLimitConfigs.webhook, webhookRoutes);
-app.use('/users', userRoutes);
-app.use('/organizations', organizationRoutes);
-app.use('/fundraisers', fundraiserRoutes);
-app.use('/events', eventRoutes);
-app.use('/donations', rateLimitConfigs.donations, donationRoutes);
-app.use('/interests', interestRoutes);
-app.use('/admin', adminRoutes);
-
-// Catch-all
+// Temporary message for all other endpoints
 app.use('*', (req, res) => {
+  if (req.method === 'POST' && req.path === '/organizations') {
+    return res.status(503).json({
+      error: 'Organizations API temporarily unavailable',
+      code: 'UNDER_MAINTENANCE',
+      message: 'Backend controllers need to be rebuilt - repositories missing',
+      technical: 'dist/services/database/repositories files are missing'
+    });
+  }
+
   res.status(404).json({
     error: 'Endpoint not found',
     code: 'ENDPOINT_NOT_FOUND',
-    path: req.originalUrl
+    path: req.originalUrl,
+    note: 'API is partially operational - most endpoints temporarily disabled due to missing compiled files'
   });
 });
 
