@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "echo 'Build skipped for now'",
-    "vercel-build": "echo 'Build skipped - using index.js'",
+    "build": "echo 'Using existing dist/ folder'",
+    "vercel-build": "echo 'Using existing dist/ folder'",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
