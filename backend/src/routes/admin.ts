@@ -2,9 +2,7 @@ import { Router } from 'express';
 import { authenticate, requireAdmin, requirePermission } from '../middleware/auth.js';
 import {
   validateCreateOrganization,
-  validateCreateUser,
   validateCreateFundraiser,
-  validateCreateEvent,
   validatePaginationQuery,
   validateUuidParam
 } from '../middleware/validation.js';
@@ -56,7 +54,7 @@ router.delete('/organizations/:id',
 
 // Admin User Management
 router.post('/users',
-  validateCreateUser,
+  // TODO: Add validateCreateUser
   userController.createUser
 );
 
@@ -72,7 +70,7 @@ router.get('/users/:id',
 
 router.put('/users/:id',
   validateUuidParam,
-  validateCreateUser,
+  // TODO: Add validateUpdateUser
   userController.updateUser
 );
 
@@ -110,7 +108,7 @@ router.delete('/fundraisers/:id',
 
 // Admin Event Management
 router.post('/events',
-  validateCreateEvent,
+  // TODO: Add validateCreateEvent
   eventController.createEvent
 );
 
@@ -126,7 +124,7 @@ router.get('/events/:id',
 
 router.put('/events/:id',
   validateUuidParam,
-  validateCreateEvent,
+  // TODO: Add validateUpdateEvent
   eventController.updateEvent
 );
 

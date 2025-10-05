@@ -9,10 +9,10 @@ import {
   PaginatedResult,
   UserWithOrganizations
 } from '../database/types.js';
-import { PasswordService } from '../../auth/password.js';
-import { JWTService } from '../../auth/jwt.js';
-import { MFAService } from '../../auth/mfa.js';
-import { SessionService } from '../../auth/session.js';
+import { passwordService } from '../../auth/password.js';
+import { jwtService } from '../../auth/jwt.js';
+import { mfaService } from '../../auth/mfa.js';
+import { sessionManager } from '../../auth/session.js';
 import { logger } from '../../middleware/logging.js';
 
 class UserRepository extends BaseRepository<User, CreateUserData, UpdateUserData, UserFilters> {
@@ -183,17 +183,17 @@ export interface UserVerificationRequest {
 
 export class UserService {
   private userRepository: UserRepository;
-  private passwordService: PasswordService;
-  private jwtService: JWTService;
-  private mfaService: MFAService;
-  private sessionService: SessionService;
+  private passwordService: typeof passwordService;
+  private jwtService: typeof jwtService;
+  private mfaService: typeof mfaService;
+  private sessionService: typeof sessionManager;
 
   constructor(db?: DatabaseService) {
     this.userRepository = new UserRepository(db);
-    this.passwordService = new PasswordService();
-    this.jwtService = new JWTService();
-    this.mfaService = new MFAService();
-    this.sessionService = new SessionService();
+    this.passwordService = passwordService;
+    this.jwtService = jwtService;
+    this.mfaService = mfaService;
+    this.sessionService = sessionManager;
   }
 
   async registerUser(registrationData: UserRegistrationData): Promise<AuthResult> {

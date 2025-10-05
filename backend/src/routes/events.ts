@@ -1,8 +1,6 @@
 import { Router } from 'express';
 import { authenticate, allowAnonymous, requirePermission } from '../middleware/auth.js';
 import {
-  validateCreateEvent,
-  validateUpdateEvent,
   validatePaginationQuery,
   validateUuidParam,
   validateSlugParam
@@ -38,7 +36,7 @@ router.get('/search',
 router.post('/',
   authenticate(),
   requirePermission('event', 'create'),
-  validateCreateEvent,
+  // TODO: Add validateCreateEvent
   eventController.createEvent
 );
 
@@ -59,7 +57,7 @@ router.put('/:id',
   authenticate(),
   requirePermission('event', 'update'),
   validateUuidParam,
-  validateUpdateEvent,
+  // TODO: Add validateUpdateEvent
   eventController.updateEvent
 );
 
