@@ -1,4 +1,4 @@
-import { SignJWT, jwtVerify, JWTPayload } from 'jose';
+import { SignJWT, jwtVerify } from 'jose';
 import { config } from '../config/index.js';
 import { UserPayload, TokenPair } from '../types/auth.js';
 
@@ -167,7 +167,9 @@ class JWTService {
   isTokenExpiringSoon(token: string, bufferMinutes: number = 5): boolean {
     try {
       const [, payloadBase64] = token.split('.');
-      const payload = JSON.parse(Buffer.from(payloadBase64, 'base64url').toString());
+      // Convert base64url to base64
+      const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(Buffer.from(base64, 'base64').toString());
 
       const expirationTime = payload.exp * 1000; // Convert to milliseconds
       const currentTime = Date.now();
