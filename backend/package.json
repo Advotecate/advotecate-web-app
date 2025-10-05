@@ -2,11 +2,12 @@
   "name": "advotecate-backend-api",
   "version": "1.0.0",
   "description": "Advotecate Backend API Server",
-  "main": "dist/server.js",
+  "main": "index.js",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
+    "vercel-build": "tsc",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
